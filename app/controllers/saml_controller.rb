@@ -1,4 +1,4 @@
-require 'onelogin/saml'
+require 'ruby-saml'
 
 class SamlController < ApplicationController
   skip_before_filter :verify_authenticity_token, :only => [:consume]
@@ -6,15 +6,15 @@ class SamlController < ApplicationController
 
   def index
     settings = Account.get_saml_settings
-    request = Onelogin::Saml::Authrequest.new
+    request = OneLogin::RubySaml::Authrequest.new
     redirect_to(request.create(settings))
   end
 
   def consume
-    response          = Onelogin::Saml::Response.new(params[:SAMLResponse])
+    response          = OneLogin::RubySaml::Response.new(params[:SAMLResponse])
     response.settings = Account.get_saml_settings
 
-    if response.is_valid? && user = User.find_by_mail(response.name_id)
+    if response.is_valid? && user = User.find_by_login(response.name_id)
 
       self.logged_user = user
       # generate a key and set cookie if autologin
