@@ -7,6 +7,10 @@ class SamlController < ApplicationController
   def index
     settings = Account.get_saml_settings
     request = OneLogin::RubySaml::Authrequest.new
+    back_url = params[:back_url].to_s
+    if back_url.present?
+      cookies[:back_url] = back_url
+    end
     redirect_to(request.create(settings))
   end
 
@@ -23,7 +27,13 @@ class SamlController < ApplicationController
         cookies[:autologin] = { :value => token.value, :expires => 1.year.from_now }
       end
       call_hook(:controller_account_success_authentication_after, {:user => user })
-      redirect_back_or_default :controller => 'my', :action => 'page'
+
+      back_url = cookies[:back_url].to_s
+      if back_url.present?
+        redirect_to back_url
+      else
+        redirect_back_or_default :controller => 'my', :action => 'page'
+      end
 
     else
       invalid_credentials(user)
