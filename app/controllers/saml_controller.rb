@@ -18,7 +18,10 @@ class SamlController < ApplicationController
     response          = OneLogin::RubySaml::Response.new(params[:SAMLResponse])
     response.settings = Account.get_saml_settings
 
-    if response.is_valid? && user = User.find_by_login(response.name_id)
+    name_id_tokens = response.name_id.split('-')
+    name_id_map = {'68909' => 'CI', '68912' => 'PSP', 'DO' => 'DO'}
+    if response.is_valid? && user = User.find_by_login([name_id_tokens[0],
+        name_id_map[name_id_tokens[1]], name_id_tokens[2]].join('-'))
 
       self.logged_user = user
       # generate a key and set cookie if autologin
