@@ -1,3 +1,4 @@
+require 'base64'
 require 'ruby-saml'
 
 class SamlController < ApplicationController
@@ -15,13 +16,15 @@ class SamlController < ApplicationController
   end
 
   def consume
-    response          = OneLogin::RubySaml::Response.new(params[:SAMLResponse])
+    response = OneLogin::RubySaml::Response.new(Base64.decode64(
+       params[:SAMLResponse]).force_encoding('utf-8').encode('windows-1252'))
     response.settings = Account.get_saml_settings
 
-    name_id_tokens = response.name_id.split('-')
-    name_id_map = {'68909' => 'CI', '68912' => 'PSP', 'DO' => 'DO'}
-    if response.is_valid? && user = User.find_by_login([name_id_tokens[0],
-        name_id_map[name_id_tokens[1]], name_id_tokens[2]].join('-'))
+    name_id_tokens = response.name_id.downcase.split('-')
+    name_id_map = {'68909' => 'ci', '68912' => 'psp', 'do' => 'do'}
+    name_id = [name_id_tokens[0], name_id_map[name_id_tokens[1]],
+       name_id_tokens[2]].join('-')
+    if response.is_valid? && user = User.find_by_login(name_id)
 
       self.logged_user = user
       # generate a key and set cookie if autologin
